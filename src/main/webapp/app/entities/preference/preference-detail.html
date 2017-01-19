@@ -1,0 +1,31 @@
+
+<div>
+    <h2><span data-translate="21PointsApp.preference.detail.title">Preference</span> {{vm.preference.id}}</h2>
+    <hr>
+    <jhi-alert-error></jhi-alert-error>
+    <dl class="dl-horizontal jh-entity-details">
+        <dt><span data-translate="21PointsApp.preference.weeklyGoal">Weekly Goal</span></dt>
+        <dd>
+            <span>{{vm.preference.weeklyGoal}}</span>
+        </dd>
+        <dt><span data-translate="21PointsApp.preference.weightUnits">Weight Units</span></dt>
+        <dd>
+            <span data-translate="{{'21PointsApp.Units.' + vm.preference.weightUnits}}">{{vm.preference.weightUnits}}</span>
+        </dd>
+        <dt><span data-translate="21PointsApp.preference.user">User</span></dt>
+        <dd>
+            {{vm.preference.user.undefined}}
+        </dd>
+    </dl>
+
+    <button type="submit"
+            ui-sref="{{ vm.previousState }}"
+            class="btn btn-info">
+        <span class="glyphicon glyphicon-arrow-left"></span>&nbsp;<span data-translate="entity.action.back"> Back</span>
+    </button>
+
+    <button type="button" ui-sref="preference-detail.edit({id:vm.preference.id})" class="btn btn-primary">
+        <span class="glyphicon glyphicon-pencil"></span>
+        <span class="hidden-xs hidden-sm" data-translate="entity.action.edit"> Edit</span>
+    </button>
+</div>
