@@ -1,6 +1,7 @@
 package org.jhipster.health.domain;
 
 import org.hibernate.annotations.Cache;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.elasticsearch.annotations.Document;
 
@@ -39,6 +40,15 @@ public class BloodPressure implements Serializable {
 
     @ManyToOne
     private User user;
+
+    public BloodPressure() { }
+
+    public BloodPressure(ZonedDateTime dateTime, Integer systolic, Integer diastolic, User user) {
+        this.timestamp = dateTime;
+        this.systolic = systolic;
+        this.diastolic = diastolic;
+        this.user = user;
+    }
 
     public Long getId() {
         return id;

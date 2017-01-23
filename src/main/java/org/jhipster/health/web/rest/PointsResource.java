@@ -4,15 +4,24 @@ import com.codahale.metrics.annotation.Timed;
 import org.jhipster.health.domain.Points;
 
 import org.jhipster.health.repository.PointsRepository;
+import org.jhipster.health.repository.UserRepository;
 import org.jhipster.health.repository.search.PointsSearchRepository;
+import org.jhipster.health.security.AuthoritiesConstants;
+import org.jhipster.health.security.SecurityUtils;
+import org.jhipster.health.web.rest.dto.PointsPerMonth;
+import org.jhipster.health.web.rest.dto.PointsPerWeek;
 import org.jhipster.health.web.rest.util.HeaderUtil;
 import org.jhipster.health.web.rest.util.PaginationUtil;
 
 import io.swagger.annotations.ApiParam;
+import org.joda.time.DateTimeConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.geo.Point;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +31,10 @@ import javax.inject.Inject;
 import javax.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,12 +50,15 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 public class PointsResource {
 
     private final Logger log = LoggerFactory.getLogger(PointsResource.class);
-        
+
     @Inject
     private PointsRepository pointsRepository;
 
     @Inject
     private PointsSearchRepository pointsSearchRepository;
+
+    @Inject
+    private UserRepository userRepository;
 
     /**
      * POST  /points : Create a new points.
@@ -57,6 +73,10 @@ public class PointsResource {
         log.debug("REST request to save Points : {}", points);
         if (points.getId() != null) {
             return ResponseEntity.badRequest().headers(HeaderUtil.createFailureAlert("points", "idexists", "A new points cannot already have an ID")).body(null);
+        }
+        if(!SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
+            log.debug("No user passed in, using current user: {}", SecurityUtils.getCurrentUserLogin());
+            points.setUser(userRepository.findOneByLogin(SecurityUtils.getCurrentUserLogin()).get());
         }
         Points result = pointsRepository.save(points);
         pointsSearchRepository.save(result);
@@ -97,16 +117,76 @@ public class PointsResource {
      */
     @GetMapping("/points")
     @Timed
-    public ResponseEntity<List<Points>> getAllPoints(@ApiParam Pageable pageable)
-        throws URISyntaxException {
+    public ResponseEntity<List<Points>> getAllPoints(@ApiParam Pageable pageable) throws URISyntaxException {
         log.debug("REST request to get a page of Points");
-        Page<Points> page = pointsRepository.findAll(pageable);
+        Page<Points> page;
+        if(SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
+            page = pointsRepository.findAllByOrderByDateDesc(pageable);
+        } else {
+            page = pointsRepository.findByUserIsCurrentUser(pageable);
+        }
+
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, "/api/points");
         return new ResponseEntity<>(page.getContent(), headers, HttpStatus.OK);
     }
 
     /**
-     * GET  /points/:id : get the "id" points.
+     * GET /points -> get all the points for the current week.
+     */
+    @GetMapping("/points-this-week")
+    @Timed
+    public ResponseEntity<PointsPerWeek> getPointsThisWeek() {
+        //Get current date
+        LocalDate now = LocalDate.now();
+        //Get first day of week
+        LocalDate startOfWeek = now.with(DayOfWeek.MONDAY);
+        //Get last day of week
+        LocalDate endOfWeek = now.with(DayOfWeek.SUNDAY);
+        log.debug("Looking for points between: {} and {}", startOfWeek, endOfWeek);
+
+        List<Points> points = pointsRepository.findAllByDateBetweenAndUserLogin(startOfWeek, endOfWeek, SecurityUtils.getCurrentUserLogin());
+        return calculatePoints(startOfWeek, points);
+
+    }
+
+    private ResponseEntity<PointsPerWeek> calculatePoints(LocalDate startOfWeek, List<Points> points) {
+        Integer numPoints = points.stream()
+            .mapToInt(p -> p.getExercise() + p.getMeals() + p.getAlcohol())
+            .sum();
+
+        PointsPerWeek count = new PointsPerWeek(startOfWeek, numPoints);
+        return new ResponseEntity<PointsPerWeek>(count, HttpStatus.OK);
+    }
+
+    /**
+     * GET /points -> get all the points for a particular week.
+     */
+
+    @RequestMapping(value = "/points-by-week/{startDate}")
+    @Timed
+    public ResponseEntity<PointsPerWeek> getPointsByWeek(@PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate) {
+        // Get last day of week
+        LocalDate endOfWeek = startDate.with(DayOfWeek.SUNDAY);
+        List<Points> points = pointsRepository.findAllByDateBetweenAndUserLogin(startDate, endOfWeek, SecurityUtils.getCurrentUserLogin());
+        return calculatePoints(startDate, points);
+    }
+
+    /**
+     * GET /points -> get all the points for a particular current month.
+     */
+    @RequestMapping(value = "/points-by-month/{yearWithMonth}")
+    @Timed
+    public ResponseEntity<PointsPerMonth> getPointsByMonth(@PathVariable @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearWithMonth) {
+        // Get lsat day of the month
+        LocalDate endOfMonth = yearWithMonth.atEndOfMonth();
+        List<Points> points = pointsRepository.findAllByDateBetweenAndUserLogin(yearWithMonth.atDay(1), endOfMonth, SecurityUtils.getCurrentUserLogin());
+        PointsPerMonth pointsPerMonth = new PointsPerMonth(yearWithMonth, points);
+        return new ResponseEntity<PointsPerMonth>(pointsPerMonth, HttpStatus.OK);
+    }
+
+
+    /**
+     * GET  /points/:id -> get the "id" points.
      *
      * @param id the id of the points to retrieve
      * @return the ResponseEntity with status 200 (OK) and with body the points, or with status 404 (Not Found)
@@ -142,7 +222,7 @@ public class PointsResource {
      * SEARCH  /_search/points?query=:query : search for the points corresponding
      * to the query.
      *
-     * @param query the query of the points search 
+     * @param query the query of the points search
      * @param pageable the pagination information
      * @return the result of the search
      * @throws URISyntaxException if there is an error to generate the pagination HTTP headers

@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+   <changeSet author="kadasoftware (generated)" id="1484954411466-1">
+      <createSequence sequenceName="hibernate_sequence"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-2">
+      <createTable tableName="blood_pressure">
+         <column autoIncrement="true" name="id" type="BIGINT">
+            <constraints primaryKey="true" primaryKeyName="blood_pressurePK"/>
+         </column>
+         <column name="diastolic" type="INT">
+            <constraints nullable="false"/>
+         </column>
+         <column name="systolic" type="INT">
+            <constraints nullable="false"/>
+         </column>
+         <column name="timestamp" type="timestamp">
+            <constraints nullable="false"/>
+         </column>
+         <column name="user_id" type="BIGINT"/>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-3">
+      <createTable tableName="jhi_authority">
+         <column name="name" type="VARCHAR(50)">
+            <constraints nullable="false"/>
+         </column>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-4">
+      <createTable tableName="jhi_persistent_audit_event">
+         <column autoIncrement="true" name="event_id" type="BIGINT">
+            <constraints primaryKey="true" primaryKeyName="jhi_persistent_audit_eventPK"/>
+         </column>
+         <column name="event_date" type="timestamp"/>
+         <column name="event_type" type="VARCHAR(255)"/>
+         <column name="principal" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+         </column>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-5">
+      <createTable tableName="jhi_persistent_audit_evt_data">
+         <column name="event_id" type="BIGINT">
+            <constraints nullable="false"/>
+         </column>
+         <column name="value" type="VARCHAR(255)"/>
+         <column name="name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+         </column>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-6">
+      <createTable tableName="jhi_user">
+         <column autoIncrement="true" name="id" type="BIGINT">
+            <constraints primaryKey="true" primaryKeyName="jhi_userPK"/>
+         </column>
+         <column name="created_by" type="VARCHAR(50)">
+            <constraints nullable="true"/>
+         </column>
+         <column name="created_date" type="timestamp">
+            <constraints nullable="true"/>
+         </column>
+         <column name="last_modified_by" type="VARCHAR(50)"/>
+         <column name="last_modified_date" type="timestamp"/>
+         <column name="activated" type="BOOLEAN">
+            <constraints nullable="false"/>
+         </column>
+         <column name="activation_key" type="VARCHAR(20)"/>
+         <column name="email" type="VARCHAR(100)"/>
+         <column name="first_name" type="VARCHAR(50)"/>
+         <column name="lang_key" type="VARCHAR(5)"/>
+         <column name="last_name" type="VARCHAR(50)"/>
+         <column name="login" type="VARCHAR(50)">
+            <constraints nullable="false"/>
+         </column>
+         <column name="password_hash" type="VARCHAR(60)"/>
+         <column name="reset_date" type="timestamp"/>
+         <column name="reset_key" type="VARCHAR(20)"/>
+         <column name="preferences_id" type="BIGINT"/>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-7">
+      <createTable tableName="jhi_user_authority">
+         <column name="user_id" type="BIGINT">
+            <constraints nullable="false"/>
+         </column>
+         <column name="authority_name" type="VARCHAR(50)">
+            <constraints nullable="false"/>
+         </column>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-8">
+      <createTable tableName="points">
+         <column autoIncrement="true" name="id" type="BIGINT">
+            <constraints primaryKey="true" primaryKeyName="pointsPK"/>
+         </column>
+         <column name="alcohol" type="INT"/>
+         <column name="date" type="date">
+            <constraints nullable="false"/>
+         </column>
+         <column name="exercise" type="INT"/>
+         <column name="meals" type="INT"/>
+         <column name="notes" type="VARCHAR(140)"/>
+         <column name="user_id" type="BIGINT"/>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-9">
+      <createTable tableName="preference">
+         <column autoIncrement="true" name="id" type="BIGINT">
+            <constraints primaryKey="true" primaryKeyName="preferencePK"/>
+         </column>
+         <column name="weekly_goal" type="INT">
+            <constraints nullable="false"/>
+         </column>
+         <column name="weight_units" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+         </column>
+         <column name="user_id" type="BIGINT"/>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-10">
+      <createTable tableName="weight">
+         <column autoIncrement="true" name="id" type="BIGINT">
+            <constraints primaryKey="true" primaryKeyName="weightPK"/>
+         </column>
+         <column name="timestamp" type="timestamp">
+            <constraints nullable="false"/>
+         </column>
+         <column name="weight" type="DOUBLE">
+            <constraints nullable="false"/>
+         </column>
+         <column name="user_id" type="BIGINT"/>
+      </createTable>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-11">
+      <addPrimaryKey columnNames="event_id, name" tableName="jhi_persistent_audit_evt_data"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-12">
+      <addPrimaryKey columnNames="user_id, authority_name" tableName="jhi_user_authority"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-13">
+      <addPrimaryKey columnNames="name"
+                     constraintName="jhi_authorityPK"
+                     tableName="jhi_authority"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-14">
+      <addUniqueConstraint columnNames="email"
+                           constraintName="UC_JHI_USEREMAIL_COL"
+                           tableName="jhi_user"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-15">
+      <addUniqueConstraint columnNames="login"
+                           constraintName="UC_JHI_USERLOGIN_COL"
+                           tableName="jhi_user"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-16">
+      <addUniqueConstraint columnNames="user_id"
+                           constraintName="UC_PREFERENCEUSER_ID_COL"
+                           tableName="preference"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-17">
+      <addForeignKeyConstraint baseColumnNames="user_id"
+                               baseTableName="preference"
+                               constraintName="FK1ug4w1dql4wr22wtt5tonhvw7"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="id"
+                               referencedTableName="jhi_user"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-18">
+      <addForeignKeyConstraint baseColumnNames="user_id"
+                               baseTableName="jhi_user_authority"
+                               constraintName="FK290okww5jujghp4el5i7mgwu0"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="id"
+                               referencedTableName="jhi_user"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-19">
+      <addForeignKeyConstraint baseColumnNames="event_id"
+                               baseTableName="jhi_persistent_audit_evt_data"
+                               constraintName="FK2ehnyx2si4tjd2nt4q7y40v8m"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="event_id"
+                               referencedTableName="jhi_persistent_audit_event"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-20">
+      <addForeignKeyConstraint baseColumnNames="user_id"
+                               baseTableName="blood_pressure"
+                               constraintName="FK2xijenuvfaqffypc4dhlhy938"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="id"
+                               referencedTableName="jhi_user"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-21">
+      <addForeignKeyConstraint baseColumnNames="user_id"
+                               baseTableName="points"
+                               constraintName="FK3mr9b3uibt5mmy6mbnn6d8217"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="id"
+                               referencedTableName="jhi_user"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-22">
+      <addForeignKeyConstraint baseColumnNames="authority_name"
+                               baseTableName="jhi_user_authority"
+                               constraintName="FK4psxl0jtx6nr7rhqbynr6itoc"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="name"
+                               referencedTableName="jhi_authority"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-23">
+      <addForeignKeyConstraint baseColumnNames="preferences_id"
+                               baseTableName="jhi_user"
+                               constraintName="FK747ljpsjdyqjthn8xdv9qjc3f"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="id"
+                               referencedTableName="preference"/>
+   </changeSet>
+   <changeSet author="kadasoftware (generated)" id="1484954411466-24">
+      <addForeignKeyConstraint baseColumnNames="user_id"
+                               baseTableName="weight"
+                               constraintName="FKbjfkga4hlo97rob24igfo97sx"
+                               deferrable="false"
+                               initiallyDeferred="false"
+                               referencedColumnNames="id"
+                               referencedTableName="jhi_user"/>
+
+
+       <loadData encoding="UTF-8"
+                 file="config/liquibase/users.csv"
+                 separator=";"
+                 tableName="jhi_user">
+           <column name="activated" type="boolean"/>
+           <column name="created_date" type="timestamp"/>
+       </loadData>
+
+       <loadData encoding="UTF-8"
+                 file="config/liquibase/authorities.csv"
+                 separator=";"
+                 tableName="jhi_authority"/>
+
+       <loadData encoding="UTF-8"
+                 file="config/liquibase/users_authorities.csv"
+                 separator=";"
+                 tableName="jhi_user_authority"/>
+   </changeSet>
+
+
+</databaseChangeLog>

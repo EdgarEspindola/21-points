@@ -13,6 +13,8 @@
         vm.bloodPressure = entity;
         vm.previousState = previousState.name;
 
+        console.log("Blood Pressure", vm.bloodPressure);
+
         var unsubscribe = $rootScope.$on('21PointsApp:bloodPressureUpdate', function(event, result) {
             vm.bloodPressure = result;
         });

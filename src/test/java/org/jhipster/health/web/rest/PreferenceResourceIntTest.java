@@ -26,10 +26,14 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import org.jhipster.health.domain.enumeration.Units;
+import org.springframework.web.context.WebApplicationContext;
+
 /**
  * Test class for the PreferenceResource REST controller.
  *
@@ -59,6 +63,9 @@ public class PreferenceResourceIntTest {
 
     @Inject
     private EntityManager em;
+
+    @Inject
+    private WebApplicationContext context;
 
     private MockMvc restPreferenceMockMvc;
 
@@ -99,9 +106,15 @@ public class PreferenceResourceIntTest {
     public void createPreference() throws Exception {
         int databaseSizeBeforeCreate = preferenceRepository.findAll().size();
 
-        // Create the Preference
+        // create security-aware mockMvc
+        restPreferenceMockMvc = MockMvcBuilders
+             .webAppContextSetup(context)
+             .apply(springSecurity())
+             .build();
 
+        // Create the Preference
         restPreferenceMockMvc.perform(post("/api/preferences")
+            .with(user("User"))
             .contentType(TestUtil.APPLICATION_JSON_UTF8)
             .content(TestUtil.convertObjectToJsonBytes(preference)))
             .andExpect(status().isCreated());
@@ -180,8 +193,15 @@ public class PreferenceResourceIntTest {
         // Initialize the database
         preferenceRepository.saveAndFlush(preference);
 
+        // create security-aware mockMvc
+        restPreferenceMockMvc = MockMvcBuilders
+            .webAppContextSetup(context)
+            .apply(springSecurity())
+            .build();
+
         // Get all the preferenceList
-        restPreferenceMockMvc.perform(get("/api/preferences?sort=id,desc"))
+        restPreferenceMockMvc.perform(get("/api/preferences?sort=id,desc")
+            .with(user("admin").roles("ADMIN")))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
             .andExpect(jsonPath("$.[*].id").value(hasItem(preference.getId().intValue())))

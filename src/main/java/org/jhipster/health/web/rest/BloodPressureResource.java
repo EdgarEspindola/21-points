@@ -4,15 +4,21 @@ import com.codahale.metrics.annotation.Timed;
 import org.jhipster.health.domain.BloodPressure;
 
 import org.jhipster.health.repository.BloodPressureRepository;
+import org.jhipster.health.repository.UserRepository;
 import org.jhipster.health.repository.search.BloodPressureSearchRepository;
+import org.jhipster.health.security.AuthoritiesConstants;
+import org.jhipster.health.security.SecurityUtils;
+import org.jhipster.health.web.rest.dto.BloodPressureByPeriod;
 import org.jhipster.health.web.rest.util.HeaderUtil;
 import org.jhipster.health.web.rest.util.PaginationUtil;
 
 import io.swagger.annotations.ApiParam;
+import org.omg.PortableInterceptor.SUCCESSFUL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +28,15 @@ import javax.inject.Inject;
 import javax.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -37,12 +49,15 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 public class BloodPressureResource {
 
     private final Logger log = LoggerFactory.getLogger(BloodPressureResource.class);
-        
+
     @Inject
     private BloodPressureRepository bloodPressureRepository;
 
     @Inject
     private BloodPressureSearchRepository bloodPressureSearchRepository;
+
+    @Inject
+    private UserRepository userRepository;
 
     /**
      * POST  /blood-pressures : Create a new bloodPressure.
@@ -54,10 +69,16 @@ public class BloodPressureResource {
     @PostMapping("/blood-pressures")
     @Timed
     public ResponseEntity<BloodPressure> createBloodPressure(@Valid @RequestBody BloodPressure bloodPressure) throws URISyntaxException {
-        log.debug("REST request to save BloodPressure : {}", bloodPressure);
+        log.debug("REST request to save BloodPressure: {}", bloodPressure.getUser()); //Ya incluye el usuario
         if (bloodPressure.getId() != null) {
             return ResponseEntity.badRequest().headers(HeaderUtil.createFailureAlert("bloodPressure", "idexists", "A new bloodPressure cannot already have an ID")).body(null);
         }
+
+        if(!SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
+            log.debug("No user passed in, using current user: {}", SecurityUtils.getCurrentUserLogin());
+            bloodPressure.setUser(userRepository.findOneByLogin(SecurityUtils.getCurrentUserLogin()).get());
+        }
+
         BloodPressure result = bloodPressureRepository.save(bloodPressure);
         bloodPressureSearchRepository.save(result);
         return ResponseEntity.created(new URI("/api/blood-pressures/" + result.getId()))
@@ -100,10 +121,56 @@ public class BloodPressureResource {
     public ResponseEntity<List<BloodPressure>> getAllBloodPressures(@ApiParam Pageable pageable)
         throws URISyntaxException {
         log.debug("REST request to get a page of BloodPressures");
-        Page<BloodPressure> page = bloodPressureRepository.findAll(pageable);
+        Page<BloodPressure> page;
+        if(!SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
+             page = bloodPressureRepository.findAllByOrderByTimestampDesc(pageable);
+        } else {
+            page = bloodPressureRepository.findByUserIsCurrentUser(pageable);
+        }
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, "/api/blood-pressures");
         return new ResponseEntity<>(page.getContent(), headers, HttpStatus.OK);
     }
+
+    /**
+     * GET /bp-by-days: get all the blood pressure readings by last x days.
+     */
+
+    @GetMapping("/bp-by-days/{days}")
+    @Timed
+    public ResponseEntity<BloodPressureByPeriod> getByDays(@PathVariable int days) {
+        ZonedDateTime rightNow = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime daysAgo = rightNow.minusDays(days);
+
+        List<BloodPressure> readings =
+            bloodPressureRepository.findAllByTimestampBetweenAndUserLoginOrderByTimestampDesc(daysAgo, rightNow, SecurityUtils.getCurrentUserLogin());
+        BloodPressureByPeriod response = new BloodPressureByPeriod("Last " + days + " Days", readings);
+        return new ResponseEntity<BloodPressureByPeriod>(response, HttpStatus.OK);
+    }
+
+    /**
+     * GET /bp-by-month : get all the blood pressure readings for a particular month.
+     */
+
+    @RequestMapping(value = "/bp-by-month/{date}")
+    @Timed
+    public ResponseEntity<BloodPressureByPeriod> getByMonth(@PathVariable @DateTimeFormat(pattern = "yyyy-MM") YearMonth date) {
+        LocalDate firstDay = date.atDay(1);
+        LocalDate lastDay = date.atEndOfMonth();
+
+        ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneOffset.UTC);
+
+        List<BloodPressure> readings = bloodPressureRepository
+            .findAllByTimestampBetweenAndUserLoginOrderByTimestampDesc(firstDay.atStartOfDay(zonedDateTime.getZone()),
+                lastDay.plusDays(1).atStartOfDay(zonedDateTime.getZone()), SecurityUtils.getCurrentUserLogin());
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
+        String yearAndMonth = fmt.format(firstDay);
+
+        BloodPressureByPeriod response = new BloodPressureByPeriod(yearAndMonth, readings);
+        return new ResponseEntity<BloodPressureByPeriod>(response, HttpStatus.OK);
+
+    }
+
 
     /**
      * GET  /blood-pressures/:id : get the "id" bloodPressure.
@@ -142,7 +209,7 @@ public class BloodPressureResource {
      * SEARCH  /_search/blood-pressures?query=:query : search for the bloodPressure corresponding
      * to the query.
      *
-     * @param query the query of the bloodPressure search 
+     * @param query the query of the bloodPressure search
      * @param pageable the pagination information
      * @return the result of the search
      * @throws URISyntaxException if there is an error to generate the pagination HTTP headers

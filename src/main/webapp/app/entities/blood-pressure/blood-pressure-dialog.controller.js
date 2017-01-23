@@ -10,6 +10,12 @@
     function BloodPressureDialogController ($timeout, $scope, $stateParams, $uibModalInstance, entity, BloodPressure, User) {
         var vm = this;
 
+        // defaults for new entries
+        if (!entity.id) {
+            var now = new Date();
+            entity.timestamp = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes()));
+        }
+
         vm.bloodPressure = entity;
         vm.clear = clear;
         vm.datePickerOpenStatus = {};
@@ -27,6 +33,7 @@
 
         function save () {
             vm.isSaving = true;
+            console.log("Blood Pressure", vm.bloodPressure);
             if (vm.bloodPressure.id !== null) {
                 BloodPressure.update(vm.bloodPressure, onSaveSuccess, onSaveError);
             } else {

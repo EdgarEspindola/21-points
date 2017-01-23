@@ -27,7 +27,7 @@
             <column name="weekly_goal" type="integer">
                 <constraints nullable="false" />
             </column>
-            
+
             <column name="weight_units" type="varchar(255)">
                 <constraints nullable="false" />
             </column>
@@ -36,6 +36,7 @@
             </column>
             <!-- jhipster-needle-liquibase-add-column - JHipster will add columns here, do not remove-->
         </createTable>
-        
+
     </changeSet>
-</databaseChangeLog>
+
+ </databaseChangeLog>
